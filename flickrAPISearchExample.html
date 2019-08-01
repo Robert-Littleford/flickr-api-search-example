@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	<script>
+		const apiKey = 'YOUR-API-KEY-HERE'
+		
+		$( document ).ready(function() {
+			if(document.URL.indexOf('owner') > -1) {
+				var vars = [], hash;
+				var q = document.URL.split('?')[1];
+				if(q != undefined){
+					q = q.split('&');
+					for(var i = 0; i < q.length; i++){
+						hash = q[i].split('=');
+						vars.push(hash[1]);
+						vars[hash[0]] = hash[1];
+					}
+				}
+				viewByOwner(vars['owner']);
+			}
+
+			$('#searchButton').on('click', function() { 
+				$('#pageNumber').val(1); 
+				var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&text=" + $('#searchBox').val().replace(' ', '+') + "&safe_search=3&format=json&nojsoncallback=1&page=" + $('#pageNumber').val();
+				loadImages(url); 
+				$('#nextPage').off('click').on('click', function() { 
+					$('#pageNumber').val(function(i, val) {return +val+1 });
+					var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&text=" + $('#searchBox').val().replace(' ', '+') + "&safe_search=3&format=json&nojsoncallback=1&page=" + $('#pageNumber').val();
+					loadImages(url); });
+
+				$('#previousPage').off('click').on('click', function() {
+					$('#pageNumber').val(function(i, val) {return +val-1 });
+					var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&text=" + $('#searchBox').val().replace(' ', '+') + "&safe_search=3&format=json&nojsoncallback=1&page=" + $('#pageNumber').val();
+					loadImages(url); });
+			});
+
+			function addEventListenerToLabels() {
+				$('label').on('click', function() {
+					var userID = $(this).html().replace('@','%40');
+					window.open(document.URL + "?owner=" + userID);
+				});
+			}
+
+			function viewByOwner(userID) { $('#searchBox').val("");
+				$('#pageNumber').val(1);
+				
+				var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&user_id=" + userID + "&format=json&nojsoncallback=1&page=";
+				loadImages(url); 
+				$('#nextPage').off('click').on('click', function() { 
+					$('#pageNumber').val(function(i, val) {return +val+1 });
+					var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&user_id=" + userID + "&format=json&nojsoncallback=1&page=" + $('#pageNumber').val();
+					loadImages(url); });
+
+				$('#previousPage').off('click').on('click', function() {
+					$('#pageNumber').val(function(i, val) {return +val-1 });
+					var url = "https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=" + apiKey + "&user_id=" + userID + "&format=json&nojsoncallback=1&page=" + $('#pageNumber').val();
+					loadImages(url); });
+			}
+			
+			function loadImages(url) {
+				$.getJSON( url, function( data ) {
+					$('#totalPages').html(data.photos.pages);
+					$('#pageNumber').val(data.photos.page);
+					$('#pageNumber').html(data.photos.page);
+					var items = [];
+					for (var i = 0, len = data.photos.photo.length; i < len; ++i) {
+						var link = data.photos.photo[i];
+						items.push("<li style='display:inline-block'><div style='display:block'><a href='https://farm" + link.farm + ".staticflickr.com/" + link.server + "/" + link.id + "_" + link.secret + "_b.jpg'><img src='https://farm" + link.farm + ".staticflickr.com/" + link.server + "/" + link.id + "_" + link.secret + "_q.jpg'></a></div><div style='display:block;text-align:center'><label style='cursor:pointer;'>" + link.owner + "</label></div></li>");
+					}
+
+					$("#thumbnails ul").html( items.join( "" ) );
+					addEventListenerToLabels();
+				});
+			}
+
+		});
+	</script>
+	<title>Flickr Browser</title>
+</head>
+<body>
+	<header id="headerRow" style="padding:10px 10px 10px 0px"><span id="search" style="padding:10px 10px 10px 0"><input type="text" id="searchBox"><input type="button" id="searchButton" value="Search"></span><span id="page" style="padding:10px"><span id="previousPage" style="padding:10px;text-decoration:underline;cursor:pointer;">Previous Page</span> Page <span id="pageNumber">1</span> of <span id="totalPages"></span><span id="nextPage" style="padding:10px;text-decoration:underline;cursor:pointer;">Next Page</span></span></header>
+	<div id="thumbnails" style="display:inline-block"><ul style="display:inline-block"></ul></div>
+</body>
+</html>
